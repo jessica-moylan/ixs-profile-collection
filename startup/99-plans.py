@@ -637,9 +637,10 @@ def Te_surph_energy_scan_plan_20251208():
 def test_plan():
     # yield from set_lambda_exposure(2)
     # res = yield from dscan(hrmE, -10, 10, 5, lambda_det, md={'count_time': 2})
-    yield from bps.mv(analyzer_slits.top, 0.)
-    res = yield from dscan(analyzer_slits.top, -0.5, 0.5, 5, det2, 1, det_ch=[0])
-    yield from bps.mv(analyzer_slits.top, 1.)
+    # yield from bps.mv(analyzer_slits.top, 0.)
+    res = yield from dscan(analyzer_slits.top, -0.1, 0.1, 3, det2, 1, det_ch=[0])
+    # yield from bps.mv(analyzer_slits.top, 1.)
+    print(res)
     print("**********************************************************************")
     print(f"cen  = {res[0].cen}")
     print(f"fwhm = {res[0].fwhm}")

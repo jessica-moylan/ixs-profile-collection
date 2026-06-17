@@ -18,4 +18,4 @@ tw = BufferingWrapper(tw)
 
 # Subscribe the TiledWriter
 RE.md["tiled_access_tags"] = [RE.md.get("data_session", "ixs_beamline")]
-RE.subscribe(tw)
+# RE.subscribe(tw)
