@@ -89,3 +89,14 @@ startup/utils/read_dexela.py
 startup/dexela_beam_settings.json
 .pixi/*
 !.pixi/config.toml
+
+# Alignment tracking log files (runtime data, not source)
+*.jsonl
+*.db
+
+tests/alignment_plans.py
+tests/alignment_store.py
+docs/alignment_tracking_status.md
+docs/alignment-tracking.md
+docs/lambda_detector_setup_status.md
+docs/lambda_detector_setup.md

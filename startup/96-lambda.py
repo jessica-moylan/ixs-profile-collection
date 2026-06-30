@@ -9,7 +9,8 @@ from ophyd.areadetector.plugins import PluginBase
 
 
 class PluginCV(PluginBase):
-    ...
+    comp_vision_function1 = ADCpt(EpicsSignal, 'CompVisionFunction1')
+    input1 = ADCpt(EpicsSignal, 'Input1')
 
 class LambdaDetector(DetectorBase):
     _html_docs = ['lambda.html']
@@ -67,4 +68,99 @@ def set_lambda_exposure(exposure):
     # Sets the Lambda detector exposure time (exposure)
     det = lambda_det
     yield from bps.mv(det.cam.acquire_time, exposure, det.cam.acquire_period, exposure)
+
+
+def setup_lambda_detector():
+    """Configure the Lambda detector for standard use.
+
+    Applies settings and verifications in the order of the standard setup procedure:
+
+    Phase 1 - ContinuousReadWrite mode (steps 1-6):
+        AcquireTime=1s, AcquirePeriod=1s, LowEnergyThreshold=4.5 keV,
+        OperatingMode=ContinuousReadWrite. Verifies 1 image per acquisition
+        and that ArrayCounter increments.
+
+    Phase 2 - DualThreshold mode (steps 7-10):
+        OperatingMode=DualThreshold, LowEnergyThreshold=4.5 keV,
+        HighEnergyThreshold=11.0 keV. Verifies 2 images per acquisition.
+
+    Phase 3 - ADCompVision + final verification (steps 12-16):
+        CV1:CompVisionFunction1=Subtract, CV1:Input1=1.
+        Verifies 2 images per acquisition and that ArrayCounter increments.
+
+    Raises RuntimeError if any verification step fails.
+    """
+    det = lambda_det
+
+    # Step 1
+    yield from bps.mv(det.cam.acquire_time, 1)
+    # Step 2
+    yield from bps.mv(det.cam.acquire_period, 1)
+    # Step 3
+    yield from bps.mv(det.low_thr, 4.5)
+    # Step 5
+    yield from bps.mv(det.oper_mode, 'ContinuousReadWrite')
+
+    # Step 4: verify 1 image per acquisition in ContinuousReadWrite mode
+    yield from bps.abs_set(det.cam.acquire, 1, wait=False)
+    yield from bps.sleep(2)
+    num_images = det.cam.num_images_counter.get()
+    if num_images != 1:
+        raise RuntimeError(
+            f"Step 4 failed: expected 1 image per acquisition, got {num_images}."
+        )
+
+    # Step 6: verify ArrayCounter increments with each acquisition
+    counter_before = det.cam.array_counter.get()
+    yield from bps.abs_set(det.cam.acquire, 1, wait=False)
+    yield from bps.sleep(2)
+    counter_after = det.cam.array_counter.get()
+    if counter_after <= counter_before:
+        raise RuntimeError(
+            f"Step 6 failed: ArrayCounter did not increase "
+            f"(before={counter_before}, after={counter_after})."
+        )
+
+    # Step 7
+    yield from bps.mv(det.oper_mode, 'DualThreshold')
+    # Step 8
+    yield from bps.mv(det.low_thr, 4.5)
+    # Step 9
+    yield from bps.mv(det.hig_thr, 11.0)
+
+    # Step 10: verify 2 images per acquisition in DualThreshold mode
+    yield from bps.abs_set(det.cam.acquire, 1, wait=False)
+    yield from bps.sleep(2)
+    num_images = det.cam.num_images_counter.get()
+    if num_images != 2:
+        raise RuntimeError(
+            f"Step 10 failed: expected 2 images per acquisition in DualThreshold mode, "
+            f"got {num_images}."
+        )
+
+    # Step 12
+    yield from bps.mv(det.cv1.comp_vision_function1, 'Subtract')
+    # Step 13
+    yield from bps.mv(det.cv1.input1, 1)
+
+    # Step 15: verify 2 images per acquisition after CV configuration
+    yield from bps.abs_set(det.cam.acquire, 1, wait=False)
+    yield from bps.sleep(2)
+    num_images = det.cam.num_images_counter.get()
+    if num_images != 2:
+        raise RuntimeError(
+            f"Step 15 failed: expected 2 images per acquisition after CV setup, "
+            f"got {num_images}."
+        )
+
+    # Step 16: verify ArrayCounter increments after CV configuration
+    counter_before = det.cam.array_counter.get()
+    yield from bps.abs_set(det.cam.acquire, 1, wait=False)
+    yield from bps.sleep(2)
+    counter_after = det.cam.array_counter.get()
+    if counter_after <= counter_before:
+        raise RuntimeError(
+            f"Step 16 failed: ArrayCounter did not increase "
+            f"(before={counter_before}, after={counter_after})."
+        )
 

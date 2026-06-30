@@ -1061,7 +1061,7 @@ def hrm_setup():
     yield from bps.mv(hrm2.dth, x_cen, hrm2.d4, 0)
 
     # 4th crystal alignment
-    yield from bp.rel_scan([det4], hrm2.dif, -70, 70, 51)
+    yield from bp.rel_scan([det5], hrm2.dif, -70, 70, 51)
     peak_stats = bec.peaks
     x_com = peak_stats['com']['det5_current1_mean_value']
     x_cen = peak_stats['cen']['det5_current1_mean_value']
